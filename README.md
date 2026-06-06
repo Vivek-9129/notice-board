@@ -2,7 +2,7 @@
 
 A full-stack notice board application built with **Next.js**, **Prisma**, and **TiDB Cloud (MySQL)**, deployed on **Vercel**.
 
-🔗 **Live demo:** _[Add your Vercel URL here after deployment]_
+🔗 **Live demo:** https://notice-board-nine-red.vercel.app/
 
 ---
 

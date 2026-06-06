@@ -1,14 +1,9 @@
-// components/NoticeCard.jsx
-// A single card on the notice board listing page.
-// Receives the notice data and callbacks for edit/delete from the parent.
-
 import { useState } from "react";
 
-// Map each category to a colour scheme (Tailwind classes)
 const CATEGORY_STYLES = {
-  Exam:    "bg-blue-100 text-blue-800",
-  Event:   "bg-emerald-100 text-emerald-800",
-  General: "bg-slate-100 text-slate-700",
+  Exam:    { bg: "rgba(59,130,246,0.15)", color: "#60a5fa", border: "rgba(59,130,246,0.3)" },
+  Event:   { bg: "rgba(16,185,129,0.15)", color: "#34d399", border: "rgba(16,185,129,0.3)" },
+  General: { bg: "rgba(148,163,184,0.15)", color: "#94a3b8", border: "rgba(148,163,184,0.3)" },
 };
 
 export default function NoticeCard({ notice, onEdit, onDelete }) {
@@ -16,21 +11,20 @@ export default function NoticeCard({ notice, onEdit, onDelete }) {
   const [deleting, setDeleting] = useState(false);
 
   const formattedDate = new Date(notice.publishDate).toLocaleDateString("en-IN", {
-    day:   "numeric",
-    month: "short",
-    year:  "numeric",
+    day: "numeric", month: "short", year: "numeric",
   });
+
+  const catStyle = CATEGORY_STYLES[notice.category] || CATEGORY_STYLES.General;
+  const isUrgent = notice.priority === "Urgent";
 
   async function handleDelete() {
     setDeleting(true);
     try {
-      const res = await fetch(`/api/notices/${notice.id}`, {
-        method: "DELETE",
-      });
+      const res = await fetch(`/api/notices/${notice.id}`, { method: "DELETE" });
       if (res.ok) {
-        onDelete(notice.id); // tell the parent to remove it from state
+        onDelete(notice.id);
       } else {
-        alert("Failed to delete notice. Please try again.");
+        alert("Failed to delete. Please try again.");
         setDeleting(false);
         setConfirmDelete(false);
       }
@@ -43,88 +37,92 @@ export default function NoticeCard({ notice, onEdit, onDelete }) {
 
   return (
     <div
-      className={`relative flex flex-col bg-white rounded-2xl shadow-sm border overflow-hidden transition-shadow hover:shadow-md ${
-        notice.priority === "Urgent"
-          ? "border-red-300 ring-1 ring-red-200"
-          : "border-slate-200"
-      }`}
+      className="relative flex flex-col rounded-2xl overflow-hidden transition-all duration-300 hover:-translate-y-1 hover:shadow-2xl"
+      style={{
+        background: "rgba(255,255,255,0.06)",
+        border: isUrgent ? "1px solid rgba(239,68,68,0.4)" : "1px solid rgba(255,255,255,0.1)",
+        boxShadow: isUrgent ? "0 0 20px rgba(239,68,68,0.1)" : "0 4px 24px rgba(0,0,0,0.2)",
+        fontFamily: "'Poppins', sans-serif",
+      }}
     >
-      {/* Optional image */}
+      {/* Urgent top accent bar */}
+      {isUrgent && (
+        <div className="h-1 w-full" style={{ background: "linear-gradient(90deg, #ef4444, #f97316)" }} />
+      )}
+
+      {/* Image */}
       {notice.imageUrl && (
-        <img
-          src={notice.imageUrl}
-          alt={notice.title}
-          className="w-full h-40 object-cover"
-        />
+        <img src={notice.imageUrl} alt={notice.title} className="w-full h-40 object-cover" />
       )}
 
       <div className="flex flex-col flex-1 p-5 gap-3">
-        {/* Top row: badges */}
+        {/* Badges */}
         <div className="flex items-center gap-2 flex-wrap">
-          {notice.priority === "Urgent" && (
-            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-red-100 text-red-700 border border-red-200">
-              <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" />
-              Urgent
+          {isUrgent && (
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold"
+              style={{ background: "rgba(239,68,68,0.15)", color: "#f87171", border: "1px solid rgba(239,68,68,0.3)" }}>
+              <span className="w-1.5 h-1.5 rounded-full bg-red-400 animate-pulse" />
+              URGENT
             </span>
           )}
-          <span
-            className={`px-2.5 py-0.5 rounded-full text-xs font-medium ${
-              CATEGORY_STYLES[notice.category]
-            }`}
-          >
+          <span className="px-2.5 py-1 rounded-lg text-xs font-medium"
+            style={{ background: catStyle.bg, color: catStyle.color, border: `1px solid ${catStyle.border}` }}>
             {notice.category}
           </span>
         </div>
 
         {/* Title */}
-        <h2 className="text-base font-semibold text-slate-900 leading-snug line-clamp-2">
+        <h2 className="text-base font-semibold leading-snug line-clamp-2" style={{ color: "#f1f5f9" }}>
           {notice.title}
         </h2>
 
         {/* Body */}
-        <p className="text-sm text-slate-600 leading-relaxed line-clamp-3 flex-1">
+        <p className="text-sm leading-relaxed line-clamp-3 flex-1" style={{ color: "#94a3b8" }}>
           {notice.body}
         </p>
 
         {/* Date */}
-        <p className="text-xs text-slate-400 font-medium mt-auto pt-1">
-          📅 {formattedDate}
+        <p className="text-xs font-medium pt-1" style={{ color: "#475569" }}>
+          {formattedDate}
         </p>
 
         {/* Actions */}
         {!confirmDelete ? (
-          <div className="flex gap-2 pt-2 border-t border-slate-100 mt-1">
+          <div className="flex gap-2 pt-3 border-t" style={{ borderColor: "rgba(255,255,255,0.08)" }}>
             <button
               onClick={() => onEdit(notice)}
-              className="flex-1 py-1.5 text-sm font-medium text-slate-700 bg-slate-50 hover:bg-slate-100 rounded-lg transition-colors"
+              className="flex-1 py-2 text-xs font-semibold rounded-xl transition-all hover:scale-105"
+              style={{ background: "rgba(99,102,241,0.15)", color: "#818cf8", border: "1px solid rgba(99,102,241,0.3)" }}
             >
-              ✏️ Edit
+              Edit
             </button>
             <button
               onClick={() => setConfirmDelete(true)}
-              className="flex-1 py-1.5 text-sm font-medium text-red-600 bg-red-50 hover:bg-red-100 rounded-lg transition-colors"
+              className="flex-1 py-2 text-xs font-semibold rounded-xl transition-all hover:scale-105"
+              style={{ background: "rgba(239,68,68,0.1)", color: "#f87171", border: "1px solid rgba(239,68,68,0.25)" }}
             >
-              🗑️ Delete
+              Delete
             </button>
           </div>
         ) : (
-          // Confirmation step — required by the assignment
-          <div className="pt-2 border-t border-slate-100 mt-1">
-            <p className="text-sm text-slate-700 font-medium mb-2">
-              Are you sure you want to delete this notice?
+          <div className="pt-3 border-t" style={{ borderColor: "rgba(255,255,255,0.08)" }}>
+            <p className="text-xs font-medium mb-2.5" style={{ color: "#f1f5f9" }}>
+              Delete this notice?
             </p>
             <div className="flex gap-2">
               <button
                 onClick={handleDelete}
                 disabled={deleting}
-                className="flex-1 py-1.5 text-sm font-semibold text-white bg-red-500 hover:bg-red-600 disabled:opacity-60 rounded-lg transition-colors"
+                className="flex-1 py-2 text-xs font-bold rounded-xl transition-all disabled:opacity-50"
+                style={{ background: "linear-gradient(135deg, #ef4444, #dc2626)", color: "#fff" }}
               >
                 {deleting ? "Deleting…" : "Yes, delete"}
               </button>
               <button
                 onClick={() => setConfirmDelete(false)}
                 disabled={deleting}
-                className="flex-1 py-1.5 text-sm font-medium text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors"
+                className="flex-1 py-2 text-xs font-semibold rounded-xl transition-all"
+                style={{ background: "rgba(255,255,255,0.08)", color: "#94a3b8" }}
               >
                 Cancel
               </button>

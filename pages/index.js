@@ -1,9 +1,3 @@
-// pages/index.js
-// The main Notice Board page.
-// Uses getServerSideProps to fetch notices on EVERY request (SSR) so the
-// list is always fresh — no stale cache. The notices are already sorted
-// Urgent-first by the API / Prisma query.
-
 import { useState } from "react";
 import Head from "next/head";
 import NoticeCard from "../components/NoticeCard";
@@ -11,57 +5,41 @@ import NoticeForm from "../components/NoticeForm";
 import { prisma } from "../lib/prisma";
 
 export async function getServerSideProps() {
-  // Fetch directly in getServerSideProps (server-side) for the initial load.
-  // Urgent notices appear before Normal; within each group newest first.
   const notices = await prisma.notice.findMany({
     orderBy: [{ priority: "desc" }, { publishDate: "desc" }],
   });
-
   return {
-    props: {
-      // Prisma DateTime → plain JSON string so Next.js can serialise it
-      initialNotices: JSON.parse(JSON.stringify(notices)),
-    },
+    props: { initialNotices: JSON.parse(JSON.stringify(notices)) },
   };
 }
 
+const FILTERS = ["All", "Urgent", "Exam", "Event", "General"];
+
+const FILTER_ICONS = {
+  All: "◈",
+  Urgent: "⚡",
+  Exam: "📝",
+  Event: "📅",
+  General: "📌",
+};
+
 export default function Home({ initialNotices }) {
-  const [notices, setNotices]         = useState(initialNotices);
-  const [showForm, setShowForm]       = useState(false);
-  const [editingNotice, setEditingNotice] = useState(null); // null = create mode
-  const [filter, setFilter]           = useState("All");
+  const [notices, setNotices] = useState(initialNotices);
+  const [showForm, setShowForm] = useState(false);
+  const [editingNotice, setEditingNotice] = useState(null);
+  const [filter, setFilter] = useState("All");
 
-  // ---- Helpers --------------------------------------------------------
+  function openCreate() { setEditingNotice(null); setShowForm(true); }
+  function openEdit(notice) { setEditingNotice(notice); setShowForm(true); }
+  function closeForm() { setShowForm(false); setEditingNotice(null); }
 
-  function openCreate() {
-    setEditingNotice(null);
-    setShowForm(true);
-  }
-
-  function openEdit(notice) {
-    setEditingNotice(notice);
-    setShowForm(true);
-  }
-
-  function closeForm() {
-    setShowForm(false);
-    setEditingNotice(null);
-  }
-
-  // Called by NoticeForm after a successful save
   function handleFormSuccess(savedNotice, wasEditing) {
     if (wasEditing) {
-      // Replace the old notice in state with the updated one
-      setNotices((prev) =>
-        prev.map((n) => (n.id === savedNotice.id ? savedNotice : n))
-      );
+      setNotices((prev) => prev.map((n) => (n.id === savedNotice.id ? savedNotice : n)));
     } else {
-      // Prepend new notice; re-sort so Urgent stays on top
       setNotices((prev) =>
         [...prev, savedNotice].sort((a, b) => {
-          if (a.priority === b.priority) {
-            return new Date(b.publishDate) - new Date(a.publishDate);
-          }
+          if (a.priority === b.priority) return new Date(b.publishDate) - new Date(a.publishDate);
           return a.priority === "Urgent" ? -1 : 1;
         })
       );
@@ -69,84 +47,113 @@ export default function Home({ initialNotices }) {
     closeForm();
   }
 
-  // Called by NoticeCard after a successful delete
   function handleDelete(id) {
     setNotices((prev) => prev.filter((n) => n.id !== id));
   }
 
-  // ---- Filter ---------------------------------------------------------
-
-  const FILTERS = ["All", "Urgent", "Exam", "Event", "General"];
-
   const displayed = notices.filter((n) => {
-    if (filter === "All")    return true;
+    if (filter === "All") return true;
     if (filter === "Urgent") return n.priority === "Urgent";
     return n.category === filter;
   });
 
-  // ---- Render ---------------------------------------------------------
+  const urgentCount = notices.filter((n) => n.priority === "Urgent").length;
 
   return (
     <>
       <Head>
         <title>Notice Board</title>
         <meta name="description" content="Institutional Notice Board" />
-        <link rel="icon" href="/favicon.ico" />
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
       </Head>
 
-      <div className="min-h-screen bg-slate-50">
+      <div className="min-h-screen" style={{ background: "linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0f2744 100%)", fontFamily: "'Poppins', sans-serif" }}>
+
         {/* ── Header ── */}
-        <header className="bg-white border-b border-slate-200 sticky top-0 z-40">
+        <header className="sticky top-0 z-40 border-b border-white/10" style={{ background: "rgba(15,23,42,0.85)", backdropFilter: "blur(16px)" }}>
           <div className="max-w-6xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between gap-4">
+            {/* Logo + title */}
             <div className="flex items-center gap-3">
-              <div className="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center text-white text-sm font-bold">
+              <div className="w-10 h-10 rounded-xl flex items-center justify-center text-white font-bold text-lg shadow-lg"
+                style={{ background: "linear-gradient(135deg, #6366f1, #8b5cf6)" }}>
                 N
               </div>
               <div>
-                <h1 className="text-lg font-bold text-slate-900 leading-none">
+                <h1 className="text-xl font-semibold text-white leading-none tracking-tight">
                   Notice Board
                 </h1>
-                <p className="text-xs text-slate-500 mt-0.5">
+                <p className="text-xs mt-0.5 font-light" style={{ color: "#94a3b8" }}>
                   {notices.length} notice{notices.length !== 1 ? "s" : ""}
+                  {urgentCount > 0 && (
+                    <span className="ml-2 text-red-400 font-medium">
+                      · {urgentCount} urgent
+                    </span>
+                  )}
                 </p>
               </div>
             </div>
 
+            {/* Add button */}
             <button
               onClick={openCreate}
-              className="inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold rounded-xl transition-colors shadow-sm"
+              className="inline-flex items-center gap-2 px-5 py-2.5 text-sm font-semibold text-white rounded-xl transition-all shadow-lg hover:shadow-indigo-500/30 hover:scale-105 active:scale-95"
+              style={{ background: "linear-gradient(135deg, #6366f1, #8b5cf6)" }}
             >
-              <span className="text-lg leading-none">+</span>
+              <span className="text-base leading-none">+</span>
               Add Notice
             </button>
           </div>
         </header>
 
-        <main className="max-w-6xl mx-auto px-4 sm:px-6 py-6">
+        <main className="max-w-6xl mx-auto px-4 sm:px-6 py-8">
+
+          {/* ── Stats strip ── */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-8">
+            {[
+              { label: "Total", value: notices.length, color: "#6366f1" },
+              { label: "Urgent", value: notices.filter(n => n.priority === "Urgent").length, color: "#ef4444" },
+              { label: "Exams", value: notices.filter(n => n.category === "Exam").length, color: "#3b82f6" },
+              { label: "Events", value: notices.filter(n => n.category === "Event").length, color: "#10b981" },
+            ].map((stat) => (
+              <div key={stat.label} className="rounded-2xl p-4 border border-white/10"
+                style={{ background: "rgba(255,255,255,0.05)" }}>
+                <p className="text-2xl font-bold text-white">{stat.value}</p>
+                <p className="text-xs font-medium mt-0.5" style={{ color: stat.color }}>{stat.label}</p>
+              </div>
+            ))}
+          </div>
+
           {/* ── Filter pills ── */}
           <div className="flex gap-2 flex-wrap mb-6">
             {FILTERS.map((f) => (
               <button
                 key={f}
                 onClick={() => setFilter(f)}
-                className={`px-3.5 py-1.5 rounded-full text-sm font-medium transition-colors ${
+                className="px-4 py-1.5 rounded-full text-sm font-medium transition-all border"
+                style={
                   filter === f
-                    ? "bg-indigo-600 text-white shadow-sm"
-                    : "bg-white text-slate-600 border border-slate-200 hover:border-indigo-300 hover:text-indigo-600"
-                }`}
+                    ? { background: "linear-gradient(135deg, #6366f1, #8b5cf6)", color: "#fff", borderColor: "transparent", boxShadow: "0 4px 15px rgba(99,102,241,0.4)" }
+                    : { background: "rgba(255,255,255,0.05)", color: "#94a3b8", borderColor: "rgba(255,255,255,0.1)" }
+                }
               >
-                {f}
+                {FILTER_ICONS[f]} {f}
               </button>
             ))}
           </div>
 
-          {/* ── Grid ── */}
+          {/* ── Notice grid ── */}
           {displayed.length === 0 ? (
-            <div className="text-center py-24">
-              <p className="text-4xl mb-3">📋</p>
-              <p className="text-slate-500 text-sm">
+            <div className="text-center py-32">
+              <div className="w-16 h-16 rounded-2xl mx-auto mb-4 flex items-center justify-center text-2xl"
+                style={{ background: "rgba(255,255,255,0.05)" }}>
+                📋
+              </div>
+              <p className="text-white font-medium mb-1">No notices here</p>
+              <p className="text-sm" style={{ color: "#64748b" }}>
                 {filter === "All"
-                  ? "No notices yet. Click "Add Notice" to create one."
+                  ? 'Click "Add Notice" to create the first one.'
                   : `No ${filter} notices found.`}
               </p>
             </div>
@@ -165,7 +172,6 @@ export default function Home({ initialNotices }) {
         </main>
       </div>
 
-      {/* ── Modal form (shown on create or edit) ── */}
       {showForm && (
         <NoticeForm
           notice={editingNotice}

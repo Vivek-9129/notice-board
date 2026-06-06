@@ -1,24 +1,19 @@
-/* styles/globals.css */
-/* These three @tailwind directives inject Tailwind's base reset,
-   component classes, and utility classes. Nothing else needed. */
-
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-/* Smooth scrolling for the whole page */
+/* Poppins from Google Fonts */
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');
+
 html {
   scroll-behavior: smooth;
+  font-family: 'Poppins', sans-serif;
 }
 
-/* Custom scrollbar for modals */
-::-webkit-scrollbar {
-  width: 6px;
+body {
+  font-family: 'Poppins', sans-serif;
 }
-::-webkit-scrollbar-track {
-  background: transparent;
-}
-::-webkit-scrollbar-thumb {
-  background: #cbd5e1;
-  border-radius: 999px;
-}
+
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #94a3b8; border-radius: 999px; }

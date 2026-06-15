@@ -1,7 +1,7 @@
 import { useState } from "react";
 
 const CATEGORY_STYLES = {
-  Exam:    { bg: "rgba(59,130,246,0.15)", color: "#60a5fa", border: "rgba(59,130,246,0.3)" },
+  Exam:    { bg: "rgba(183, 86, 34, 0)", color: "#60a5fa", border: "rgba(59,130,246,0.3)" },
   Event:   { bg: "rgba(16,185,129,0.15)", color: "#34d399", border: "rgba(16,185,129,0.3)" },
   General: { bg: "rgba(148,163,184,0.15)", color: "#94a3b8", border: "rgba(148,163,184,0.3)" },
 };

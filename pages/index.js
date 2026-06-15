@@ -26,6 +26,7 @@ const FILTER_ICONS = {
 export default function Home({ initialNotices }) {
   const [notices, setNotices] = useState(initialNotices);
   const [showForm, setShowForm] = useState(false);
+  const [search,setSearch] =useState("");
   const [editingNotice, setEditingNotice] = useState(null);
   const [filter, setFilter] = useState("All");
 
@@ -47,15 +48,29 @@ export default function Home({ initialNotices }) {
     closeForm();
   }
 
+
   function handleDelete(id) {
     setNotices((prev) => prev.filter((n) => n.id !== id));
   }
 
+// search filter 
+
   const displayed = notices.filter((n) => {
-    if (filter === "All") return true;
-    if (filter === "Urgent") return n.priority === "Urgent";
-    return n.category === filter;
-  });
+  const matchesSearch = n.title
+    .toLowerCase()
+    .includes(search.toLowerCase());
+
+  const matchesFilter =
+    filter === "All"
+      ? true
+      : filter === "Urgent"
+      ? n.priority === "Urgent"
+      : n.category === filter;
+
+  return matchesSearch && matchesFilter;
+});
+
+ 
 
   const urgentCount = notices.filter((n) => n.priority === "Urgent").length;
 
@@ -142,7 +157,20 @@ export default function Home({ initialNotices }) {
               </button>
             ))}
           </div>
-
+          {/*SEARCH BAR  */}
+          <div className="mb-6">
+            <input
+              type="text"
+              placeholder="Search "
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="w-full px-4 py-3 rounded-xl border border-white/10 text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              style={{
+                background: "rgba(255,255,255,0.05)",
+                backdropFilter: "blur(10px)",
+              }}
+            />
+          </div>
           {/* ── Notice grid ── */}
           {displayed.length === 0 ? (
             <div className="text-center py-32">
